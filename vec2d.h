@@ -1,6 +1,8 @@
 #ifndef VEC2D_H
 #define VEC2D_H
 
+#include <cmath>
+
 class vec2d
 {
     public:
@@ -8,6 +10,7 @@ class vec2d
         float y;
         vec2d() {x = 0.0f; y = 0.0f;};
         vec2d(float X, float Y) {x = X; y = Y;};
+        float length(){return sqrtf(x*x+y*y);};
 };
 
 inline vec2d operator+(vec2d a, vec2d b)
@@ -26,6 +29,10 @@ inline vec2d operator-(vec2d a, vec2d b)
     return vec2d(a.x-b.x,a.y-b.y);
 }
 
+inline vec2d operator-(vec2d b)
+{
+    return vec2d(-b.x,-b.y);
+}
 inline void operator-=(vec2d &a, vec2d b)
 {
     a.x = a.x - b.x;

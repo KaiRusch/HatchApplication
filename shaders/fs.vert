@@ -5,10 +5,12 @@ in vec2 vfTexCoord;
 
 out vec4 outColor;
 
+uniform sampler2D tex;
+
 void main()
 {
 
-    outColor = vec4(vfTexCoord,1.0f,1.0f);
+    outColor = texture(tex,vec2(1-vfTexCoord.x,vfTexCoord.y));
 
 }
 

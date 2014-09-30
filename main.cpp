@@ -18,8 +18,8 @@
 SDL_Window *window = NULL;
 SDL_GLContext context;
 
-const int SCREEN_WIDTH = 500;
-const int SCREEN_HEIGHT = 500;
+const int SCREEN_WIDTH = 1280;
+const int SCREEN_HEIGHT = 1024;
 
 GLuint programID;
 
@@ -30,7 +30,7 @@ bool init()
 {
     SDL_Init(SDL_INIT_VIDEO);
 
-    window = SDL_CreateWindow("OpenGl", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, SCREEN_WIDTH, SCREEN_HEIGHT, SDL_WINDOW_OPENGL);
+    window = SDL_CreateWindow("OpenGl", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, SCREEN_WIDTH, SCREEN_HEIGHT, SDL_WINDOW_OPENGL | SDL_WINDOW_FULLSCREEN);
 
     if(window == NULL)
     {
@@ -124,7 +124,25 @@ GLuint load_shaders(const char *vertexFilePath, const char *fragmentFilePath)
     return programID;
 }
 
-void draw_square(float x, float y, float width, float height, float angle)
+GLuint load_texture(const char* filepath, int texture)
+{
+    GLuint textureID;
+    glActiveTexture(texture);
+    glGenTextures(1, &textureID);
+    glBindTexture(GL_TEXTURE_2D, textureID);
+
+    int width, height;
+    unsigned char* image = SOIL_load_image(filepath,&width,&height,0,SOIL_LOAD_RGB);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, image);
+    SOIL_free_image_data(image);
+
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+    return textureID;
+}
+
+void draw_square(float x, float y, float width, float height, float angle,int texture)
 {
     GLuint elements[] =
     {
@@ -136,12 +154,14 @@ void draw_square(float x, float y, float width, float height, float angle)
     GLint uniView = glGetUniformLocation(programID, "view");
     GLint uniProj = glGetUniformLocation(programID, "proj");
 
+    glUniform1i(glGetUniformLocation(programID,"tex"),texture);
+
     glm::mat4 model(1.0f);
     glm::mat4 view(1.0f);
     glm::mat4 proj = glm::ortho(0.0f,(float)SCREEN_WIDTH,(float)SCREEN_HEIGHT,0.0f);
 
     glm::mat4 s = glm::scale(glm::mat4(1.0f),glm::vec3(width,height,1.0f));
-    glm::mat4 p = glm::translate(glm::mat4(1.0f),glm::vec3(0.0f,height/2.0f,0));
+    glm::mat4 p = glm::translate(glm::mat4(1.0f),glm::vec3(width/2.0f,height/2.0f,0));
     glm::mat4 r = glm::rotate(glm::mat4(1.0f),angle,glm::vec3(0.0f,0.0f,-1.0f));
     glm::mat4 t = glm::translate(glm::mat4(1.0f),glm::vec3(x,y,0));
 
@@ -155,6 +175,119 @@ void draw_square(float x, float y, float width, float height, float angle)
 
 }
 
+class Process
+{
+public:
+
+    bool finished;
+    Process *next;
+
+    virtual void init()
+    {
+
+    };
+
+    virtual void update(float dt)
+    {
+
+    };
+
+    virtual void draw()
+    {
+        glClear(GL_COLOR_BUFFER_BIT);
+    };
+
+};
+
+class IntroAnimation : public Process
+{
+public:
+
+    vec2d hatchPosition;
+    vec2d hatchVelocity;
+    vec2d hatchSize;
+    float hatchEndHeight;
+    int hatchTexture;
+    vec2d mottPosition;
+    vec2d mottVelocity;
+    vec2d mottSize;
+    float mottEndPos;
+    int mottTexture;
+
+    IntroAnimation
+    (
+        Process *next,
+        vec2d hatchPosition,
+        vec2d hatchSize,
+        float hatchEndHeight,
+        int hatchTexture,
+        vec2d mottPosition,
+        vec2d mottSize,
+        float mottEndPos,
+        int mottTexture
+    )
+    {
+        this->next = next;
+        finished = false;
+        this->hatchPosition = hatchPosition;
+        this->hatchSize = hatchSize;
+        this->hatchEndHeight = hatchEndHeight;
+        this->hatchTexture = hatchTexture;
+        this->mottPosition = mottPosition;
+        this->mottSize = mottSize;
+        this->mottEndPos = mottEndPos;
+        this->mottTexture = mottTexture;
+    }
+
+    void init()
+    {
+        glClearColor(1.0f,1.0f,1.0f,1.0f);
+    }
+
+    void update(float dt)
+    {
+        hatchVelocity.y = 2*(hatchEndHeight - hatchPosition.y);
+        hatchPosition += dt*hatchVelocity;
+
+        mottPosition += dt*mottVelocity;
+
+        if(hatchPosition.y >= hatchEndHeight-1.0f)
+        {
+            hatchPosition.y = hatchEndHeight;
+            hatchVelocity = vec2d(0.0f,0.0f);
+
+            mottVelocity.x = 4*(mottEndPos - mottPosition.x);
+        }
+
+        if(mottPosition.x >= mottEndPos - 1.2f)
+        {
+            mottPosition.x = mottEndPos;
+
+        }
+
+    }
+
+    void draw()
+    {
+        Process::draw();
+
+        draw_square(hatchPosition.x,hatchPosition.y,hatchSize.x,hatchSize.y,0,hatchTexture);
+        draw_square(mottPosition.x,mottPosition.y,mottSize.x,mottSize.y,0,mottTexture);
+
+        draw_square(10,444,256,256,0,3);
+        draw_square(266,494,350,128,0,4);
+        draw_square(650,444,256,256,0,3);
+        draw_square(10,444+256+10,256,256,0,3);
+        draw_square(650,444+256+10,256,256,0,3);
+
+    }
+
+};
+
+void intro_init()
+{
+    glClearColor(1.0f,1.0f,1.0f,1.0f);
+}
 
 int main(int argc, char *argv[])
 {
@@ -192,33 +325,34 @@ int main(int argc, char *argv[])
     glVertexAttribPointer(texAttrib,2,GL_FLOAT,GL_FALSE,4*sizeof(float),(void*)(2*sizeof(float)));
     glEnableVertexAttribArray(texAttrib);
 
-    float mass = 1.0f;
-    vec2d position(25.0f,5.0f);
-    vec2d springs[] =
+    GLuint textureID[5] =
     {
-        vec2d(29.0f,10.0f),
-        vec2d(25.0f,45.0f),
-        vec2d(40.0f,25.0f),
-        vec2d(5.0f,30.0f),
+        load_texture("assets/hatch_logo.png",GL_TEXTURE0),
+        load_texture("assets/hmm_logo.png",GL_TEXTURE1),
+        load_texture("assets/button_in.png",GL_TEXTURE2),
+        load_texture("assets/button_out.png",GL_TEXTURE3),
+        load_texture("assets/about_me.png",GL_TEXTURE4)
     };
-    vec2d velocity(0.0f,0.0f);
-    float k = 4.0f;
-    float c = 0.3;
-    float cd = 1.05f;
-    float rho = 1.0f;
-    float e = 0.7;
-    vec2d fg(0.0f,9.8*mass);
-    vec2d fs(0.0f,0.0f);
-    vec2d fv(0.0f,0.0f);
-    vec2d fd(0.0f,0.0f);
-    vec2d fa(0.0f,0.0f);
 
     float dt = 0;
     float prevTime = 0.0f;
 
+    Process *process = NULL;
+
+    process = new IntroAnimation(NULL,vec2d(44.0f,-300.0f),vec2d(1024,128),10,0,
+                                 vec2d(-1050.0f,148.0f),vec2d(1024,256),44,1);
+    process->init();
+
+
+
     SDL_Event windowEvent;
     while(true)
     {
+        if(process == NULL)
+        {
+            break;
+        }
+
         if(SDL_PollEvent(&windowEvent))
         {
             if(windowEvent.type == SDL_QUIT)
@@ -231,18 +365,11 @@ int main(int argc, char *argv[])
                 {
                     break;
                 }
-                if(windowEvent.key.keysym.sym == SDLK_SPACE)
-                {
-                    fa = vec2d(0.0f,0.0f);
-                }
             }
 
             if(windowEvent.type == SDL_KEYDOWN)
             {
-                if(windowEvent.key.keysym.sym == SDLK_SPACE)
-                {
-                    fa = vec2d(70.0f,0.0f);
-                }
+
             }
 
         }
@@ -251,35 +378,22 @@ int main(int argc, char *argv[])
         dt = time - prevTime;
         prevTime = time;
 
-        fs = vec2d(0.0f,0.0f);
+        process->update(dt);
 
-        for(int i = 0; i < sizeof(springs)/sizeof(vec2d); ++i)
+        process->draw();
+
+        if(process->finished)
         {
-            fs+= -k*(position-springs[i]);
+            Process *completed = process;
+            process = process->next;
+            delete(completed);
         }
 
-        fv = -c*velocity;
-
-        vec2d force = fg + fs + fv + fa;
-        vec2d acceleration = force/mass;
-        position += velocity*dt + 0.5*acceleration*dt*dt;
-        velocity += acceleration*dt;
-
-        if(position.y*10 + 20 >= SCREEN_HEIGHT && velocity.y > 0)
-        {
-            velocity.y *= -e;
-        }
-
-        glClear( GL_COLOR_BUFFER_BIT);
-        for(int i = 0; i < sizeof(springs)/sizeof(vec2d); ++i)
-        {
-            draw_square(springs[i].x*10,springs[i].y*10,1,sqrtf((position.x-springs[i].x)*(position.x-springs[i].x)+(position.y-springs[i].y)*(position.y-springs[i].y))*10,atan2f(position.x-springs[i].x,position.y-springs[i].y));
-        }
-        draw_square(position.x*10,position.y*10,20,20,0);
 
         SDL_GL_SwapWindow(window);
 
     }
+    glDeleteTextures(sizeof(textureID)/sizeof(GLuint), textureID);
     glDeleteBuffers(1, &vertexBufferID);
     glDeleteVertexArrays(1, &vertexArrayID);
 

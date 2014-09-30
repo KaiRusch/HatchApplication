@@ -1,5 +1,5 @@
 #include "vec2d.h"
-#include <cmath>
+
 
 //Returns the sum of two vectors
 vec2d vecAdd(vec2d vectorA, vec2d vectorB)
