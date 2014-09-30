@@ -187,6 +187,11 @@ public:
 
     };
 
+    virtual void handle_events(SDL_Event *event)
+    {
+
+    };
+
     virtual void update(float dt)
     {
 
@@ -199,6 +204,76 @@ public:
 
 };
 
+class Button
+{
+public:
+    Process *next;
+    bool pressed;
+    int textureOut;
+    int textureIn;
+    float x;
+    float y;
+    float width;
+    float height;
+
+    Button()
+    {
+
+    };
+
+    Button(Process *next, int textureOut, int textureIn, float x, float y, float width, float height)
+    {
+        this->next = next;
+        this->pressed = false;
+        this->textureIn = textureIn;
+        this->textureOut = textureOut;
+        this->x = x;
+        this->y = y;
+        this->width = width;
+        this->height = height;
+    };
+
+    bool handle_events(SDL_Event *event)
+    {
+
+        int mouseX = 0,mouseY = 0;
+        SDL_GetMouseState(&mouseX,&mouseY);
+
+        if((mouseX-(x+width/2))*(mouseX-(x+width/2))+(mouseY-(y+height/2))*(mouseY-(y+height/2))<(width/2)*(width/2))
+        {
+            if(SDL_GetMouseState(NULL,NULL) & SDL_BUTTON(SDL_BUTTON_LEFT))
+            {
+                pressed = true;
+            }
+            if(event->type == SDL_MOUSEBUTTONUP)
+            {
+                if(event->button.button == SDL_BUTTON_LEFT)
+                {
+                    return true;
+                }
+            }
+        }
+        else
+        {
+            pressed = false;
+        }
+        return false;
+    }
+
+    void draw()
+    {
+        if(pressed)
+        {
+            draw_square(x,y,width,height,0,textureIn);
+        }
+        else
+        {
+            draw_square(x,y,width,height,0,textureOut);
+        }
+    }
+
+};
+
 class IntroAnimation : public Process
 {
 public:
@@ -208,11 +283,8 @@ public:
     vec2d hatchSize;
     float hatchEndHeight;
     int hatchTexture;
-    vec2d mottPosition;
-    vec2d mottVelocity;
-    vec2d mottSize;
-    float mottEndPos;
-    int mottTexture;
+
+    Button aboutMe;
 
     IntroAnimation
     (
@@ -220,11 +292,7 @@ public:
         vec2d hatchPosition,
         vec2d hatchSize,
         float hatchEndHeight,
-        int hatchTexture,
-        vec2d mottPosition,
-        vec2d mottSize,
-        float mottEndPos,
-        int mottTexture
+        int hatchTexture
     )
     {
         this->next = next;
@@ -233,10 +301,9 @@ public:
         this->hatchSize = hatchSize;
         this->hatchEndHeight = hatchEndHeight;
         this->hatchTexture = hatchTexture;
-        this->mottPosition = mottPosition;
-        this->mottSize = mottSize;
-        this->mottEndPos = mottEndPos;
-        this->mottTexture = mottTexture;
+
+        aboutMe = Button(NULL,3,2,10,440,256,256);
+
     }
 
     void init()
@@ -244,27 +311,22 @@ public:
         glClearColor(1.0f,1.0f,1.0f,1.0f);
     }
 
+    void handle_events(SDL_Event *event)
+    {
+        finished = aboutMe.handle_events(event);
+    }
+
     void update(float dt)
     {
         hatchVelocity.y = 2*(hatchEndHeight - hatchPosition.y);
         hatchPosition += dt*hatchVelocity;
-
-        mottPosition += dt*mottVelocity;
 
         if(hatchPosition.y >= hatchEndHeight-1.0f)
         {
             hatchPosition.y = hatchEndHeight;
             hatchVelocity = vec2d(0.0f,0.0f);
 
-            mottVelocity.x = 4*(mottEndPos - mottPosition.x);
         }
-
-        if(mottPosition.x >= mottEndPos - 1.2f)
-        {
-            mottPosition.x = mottEndPos;
-
-        }
-
     }
 
     void draw()
@@ -272,13 +334,8 @@ public:
         Process::draw();
 
         draw_square(hatchPosition.x,hatchPosition.y,hatchSize.x,hatchSize.y,0,hatchTexture);
-        draw_square(mottPosition.x,mottPosition.y,mottSize.x,mottSize.y,0,mottTexture);
 
-        draw_square(10,444,256,256,0,3);
-        draw_square(266,494,350,128,0,4);
-        draw_square(650,444,256,256,0,3);
-        draw_square(10,444+256+10,256,256,0,3);
-        draw_square(650,444+256+10,256,256,0,3);
+        aboutMe.draw();
 
     }
 
@@ -339,8 +396,7 @@ int main(int argc, char *argv[])
 
     Process *process = NULL;
 
-    process = new IntroAnimation(NULL,vec2d(44.0f,-300.0f),vec2d(1024,128),10,0,
-                                 vec2d(-1050.0f,148.0f),vec2d(1024,256),44,1);
+    process = new IntroAnimation(NULL,vec2d(44.0f,-300.0f),vec2d(1024,128),10,0);
     process->init();
 
 
@@ -367,10 +423,7 @@ int main(int argc, char *argv[])
                 }
             }
 
-            if(windowEvent.type == SDL_KEYDOWN)
-            {
-
-            }
+            process->handle_events(&windowEvent);
 
         }
 
