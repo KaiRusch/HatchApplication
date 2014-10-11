@@ -1,11 +1,11 @@
 #include <SDL2/SDL.h>
+#include <SDL2/SDL_image.h>
 #include <cstdio>
 #include <fstream>
 #include <string>
 #include <vector>
 #include <ctime>
 #include <cmath>
-#include <SOIL.h>
 #include "vec2d.h"
 #include <cstdlib>
 
@@ -32,6 +32,17 @@ bool init()
         printf("Failed to create window.\n");
         return false;
     }
+}
+
+SDL_Texture *load_texture(const char* fileName)
+{
+    SDL_Texture *texture = IMG_LoadTexture(renderer,fileName);
+    if(texture == NULL)
+    {
+        printf("Could not load %s\n",fileName);
+    }
+
+    return texture;
 }
 
 void draw_square(float x, float y, float width, float height, float angle,int texture)
@@ -223,6 +234,7 @@ class Interests : public Process
 public:
     void init()
     {
+        SDL_SetRenderDrawColor(renderer,120,50,50,255);
     };
 
     void draw()
