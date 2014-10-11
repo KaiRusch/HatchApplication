@@ -1,5 +1,6 @@
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_image.h>
+#include <SDL2/SDL_ttf.h>
 #include <cstdio>
 #include <fstream>
 #include <string>
@@ -17,12 +18,14 @@ const int SCREEN_WIDTH = 1280;
 const int SCREEN_HEIGHT = 1024;
 
 
-
-
 //Initializes SDL2, Creates a window
 bool init()
 {
     SDL_Init(SDL_INIT_VIDEO);
+
+    IMG_Init(IMG_INIT_PNG);
+
+    TTF_Init();
 
     window = SDL_CreateWindow("OpenGl", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, SCREEN_WIDTH, SCREEN_HEIGHT,SDL_WINDOW_FULLSCREEN);
     renderer = SDL_CreateRenderer(window,-1,SDL_RENDERER_ACCELERATED);
@@ -41,13 +44,28 @@ SDL_Texture *load_texture(const char* fileName)
     {
         printf("Could not load %s\n",fileName);
     }
-
     return texture;
 }
 
-void draw_square(float x, float y, float width, float height, float angle,int texture)
+void render_texture(SDL_Texture *texture, float x, float y, float w, float h)
 {
+    SDL_Rect destination;
+    destination.x = x;
+    destination.y = y;
+    destination.w = w;
+    destination.h = h;
+    SDL_RenderCopy(renderer,texture,NULL,&destination);
+}
 
+SDL_Texture *render_text(const std::string &message, TTF_Font *font, SDL_Color color)
+{
+    SDL_Surface *surface = TTF_RenderText_Blended(font,message.c_str(),color);
+
+    SDL_Texture *texture = SDL_CreateTextureFromSurface(renderer,surface);
+
+    SDL_FreeSurface(surface);
+
+    return texture;
 }
 
 class Process
@@ -83,8 +101,8 @@ class ProcessButton
 public:
     Process *next;
     bool pressed;
-    int textureOut;
-    int textureIn;
+    SDL_Texture *textureOut;
+    SDL_Texture *textureIn;
     float x;
     float y;
     float width;
@@ -95,7 +113,7 @@ public:
 
     };
 
-    ProcessButton(Process *next, int textureOut, int textureIn, float x, float y, float width, float height)
+    ProcessButton(Process *next, SDL_Texture *textureOut, SDL_Texture *textureIn, float x, float y, float width, float height)
     {
         this->next = next;
         this->pressed = false;
@@ -139,11 +157,11 @@ public:
     {
         if(pressed)
         {
-            draw_square(x,y,width,height,0,textureIn);
+            render_texture(textureIn,x,y,width,height);
         }
         else
         {
-            draw_square(x,y,width,height,0,textureOut);
+            render_texture(textureOut,x,y,width,height);
         }
     }
 
@@ -157,12 +175,17 @@ public:
     vec2d hatchVelocity;
     vec2d hatchSize;
     float hatchEndHeight;
-    int hatchTexture;
+
+    SDL_Texture *hatchTexture;
+
+    SDL_Texture *geraldHatch;
 
     ProcessButton aboutMe;
     ProcessButton interests;
     ProcessButton academics;
     ProcessButton exit;
+
+    TTF_Font *font;
 
     IntroAnimation
     (
@@ -173,7 +196,12 @@ public:
         vec2d hatchPosition,
         vec2d hatchSize,
         float hatchEndHeight,
-        int hatchTexture
+        SDL_Texture *hatchTexture,
+
+        SDL_Texture *buttonOut,
+        SDL_Texture *buttonIn,
+
+        TTF_Font *font
     )
     {
         this->next = next;
@@ -183,10 +211,15 @@ public:
         this->hatchEndHeight = hatchEndHeight;
         this->hatchTexture = hatchTexture;
 
-        this->aboutMe = ProcessButton(aboutMeProcess,3,2,10,370,128,128);
-        this->interests = ProcessButton(interestsProcess,3,2,436,370,128,128);
-        this->academics = ProcessButton(academicsProcess,3,2,10,706,128,128);
-        this->exit = ProcessButton(NULL,3,2,436,706,128,128);
+        this->aboutMe = ProcessButton(aboutMeProcess,buttonOut,buttonIn,10,370,128,128);
+        this->interests = ProcessButton(interestsProcess,buttonOut,buttonIn,436,370,128,128);
+        this->academics = ProcessButton(academicsProcess,buttonOut,buttonIn,10,706,128,128);
+        this->exit = ProcessButton(NULL,buttonOut,buttonIn,436,706,128,128);
+
+        this->font = font;
+
+        SDL_Color black = {0,0,0,100};
+        geraldHatch = render_text("Dr. Gerald G. Hatch Scholarship",font,black);
 
     }
 
@@ -219,7 +252,14 @@ public:
     {
         Process::draw();
 
-        draw_square(hatchPosition.x,hatchPosition.y,hatchSize.x,hatchSize.y,0,hatchTexture);
+        render_texture(hatchTexture,hatchPosition.x,hatchPosition.y,hatchSize.x,hatchSize.y);
+
+
+        int gHatchWidth;
+        int gHatchHeight;
+        SDL_QueryTexture(geraldHatch,NULL,NULL,&gHatchWidth,&gHatchHeight);
+
+        render_texture(geraldHatch,SCREEN_WIDTH/2-gHatchWidth/10,250,500,90);
 
         aboutMe.draw();
         interests.draw();
@@ -234,7 +274,7 @@ class Interests : public Process
 public:
     void init()
     {
-        SDL_SetRenderDrawColor(renderer,120,50,50,255);
+        SDL_SetRenderDrawColor(renderer,21,164,174,255);
     };
 
     void draw()
@@ -249,9 +289,6 @@ public:
 
 };
 
-void intro_init()
-{
-}
 
 int main(int argc, char *argv[])
 {
@@ -262,6 +299,12 @@ int main(int argc, char *argv[])
 
     SDL_SetRenderDrawColor(renderer,255,255,255,255);
 
+    SDL_Texture *hatchTexture = load_texture("assets/hatch_logo.png");
+    SDL_Texture *buttonOut = load_texture("assets/button_out.png");
+    SDL_Texture *buttonIn = load_texture("assets/button_in.png");
+
+    TTF_Font *berbas = TTF_OpenFont("assets/berbas.ttf",96);
+
 
     float dt = 0;
     float prevTime = 0.0f;
@@ -269,7 +312,21 @@ int main(int argc, char *argv[])
     Process *interests = new Interests;
 
     Process *process = NULL;
-    process = new IntroAnimation(NULL,NULL,interests,NULL,vec2d(44.0f,-1000.0f),vec2d(1024,128),10,0);
+    process = new IntroAnimation
+    (
+         NULL,
+         NULL,
+         interests,
+         NULL,
+         vec2d(44.0f,-1000.0f),
+         vec2d(1024,128),
+         10,
+         hatchTexture,
+         buttonOut,
+         buttonIn,
+         berbas
+     );
+
     process->init();
 
 
@@ -302,7 +359,7 @@ int main(int argc, char *argv[])
 
         process->update(dt);
 
-        process->draw();
+
 
         if(process->finished)
         {
@@ -318,12 +375,19 @@ int main(int argc, char *argv[])
 
         SDL_RenderClear(renderer);
 
+        process->draw();
+
         SDL_RenderPresent(renderer);
 
     }
+    SDL_DestroyTexture(buttonIn);
+    SDL_DestroyTexture(buttonOut);
+    SDL_DestroyTexture(hatchTexture);
     SDL_DestroyRenderer(renderer);
     SDL_DestroyWindow(window);
 
+    IMG_Quit();
+    TTF_Quit();
     SDL_Quit();
     return 0;
 }
