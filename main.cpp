@@ -185,6 +185,11 @@ public:
     ProcessButton academics;
     ProcessButton exit;
 
+    SDL_Texture *aboutMeTexture;
+    SDL_Texture *interestsTexture;
+    SDL_Texture *academicsTexture;
+    SDL_Texture *exitTexture;
+
     TTF_Font *font;
 
     IntroAnimation
@@ -218,8 +223,14 @@ public:
 
         this->font = font;
 
-        SDL_Color black = {0,0,0,100};
-        geraldHatch = render_text("Dr. Gerald G. Hatch Scholarship",font,black);
+        SDL_Color hatchBlue = {1,91,144,100};
+
+        geraldHatch = render_text("Dr. Gerald G. Hatch Scholarship",font,hatchBlue);
+
+        aboutMeTexture = render_text("About Me",font,hatchBlue);
+        interestsTexture = render_text("Interests",font,hatchBlue);
+        academicsTexture = render_text("Academics",font,hatchBlue);
+        exitTexture = render_text("Exit",font,hatchBlue);
 
     }
 
@@ -259,12 +270,19 @@ public:
         int gHatchHeight;
         SDL_QueryTexture(geraldHatch,NULL,NULL,&gHatchWidth,&gHatchHeight);
 
-        render_texture(geraldHatch,SCREEN_WIDTH/2-gHatchWidth/10,250,500,90);
+        render_texture(geraldHatch,SCREEN_WIDTH/2-(SCREEN_WIDTH-20)/2,200,SCREEN_WIDTH-20,128);
 
         aboutMe.draw();
+        render_texture(aboutMeTexture,aboutMe.x+aboutMe.width+5,aboutMe.y,280,aboutMe.height);
+
         interests.draw();
+        render_texture(interestsTexture,interests.x+interests.width+5,interests.y,280,interests.height);
+
         academics.draw();
+        render_texture(academicsTexture,academics.x+academics.width+5,academics.y,280,academics.height);
+
         exit.draw();
+        render_texture(exitTexture,exit.x+exit.width+5,exit.y,150,exit.height);
     }
 
 };
@@ -272,6 +290,9 @@ public:
 class Interests : public Process
 {
 public:
+
+    float scroll;
+
     void init()
     {
         SDL_SetRenderDrawColor(renderer,21,164,174,255);
@@ -284,6 +305,7 @@ public:
 
     Interests()
     {
+        scroll = 0.0f;
         finished = false;
     };
 
