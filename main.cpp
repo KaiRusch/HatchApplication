@@ -17,6 +17,13 @@ SDL_Renderer *renderer = NULL;
 const int SCREEN_WIDTH = 1280;
 const int SCREEN_HEIGHT = 1024;
 
+SDL_Texture *hatchTexture = NULL;
+SDL_Texture *buttonOut = NULL;
+SDL_Texture *buttonIn = NULL;
+SDL_Texture *kaiTexture = NULL;
+
+TTF_Font *berbas = NULL;
+
 
 //Initializes SDL2, Creates a window
 bool init()
@@ -190,14 +197,14 @@ public:
     SDL_Texture *academicsTexture;
     SDL_Texture *exitTexture;
 
+    Process *aboutMeProcess;
+    Process *interestsProcess;
+    Process *academicsProcess;
+
     TTF_Font *font;
 
     IntroAnimation
     (
-        Process *next,
-        Process *aboutMeProcess,
-        Process *interestsProcess,
-        Process *academicsProcess,
         vec2d hatchPosition,
         vec2d hatchSize,
         float hatchEndHeight,
@@ -207,36 +214,10 @@ public:
         SDL_Texture *buttonIn,
 
         TTF_Font *font
-    )
-    {
-        this->next = next;
-        finished = false;
-        this->hatchPosition = hatchPosition;
-        this->hatchSize = hatchSize;
-        this->hatchEndHeight = hatchEndHeight;
-        this->hatchTexture = hatchTexture;
+    );
 
-        this->aboutMe = ProcessButton(aboutMeProcess,buttonOut,buttonIn,10,370,128,128);
-        this->interests = ProcessButton(interestsProcess,buttonOut,buttonIn,436,370,128,128);
-        this->academics = ProcessButton(academicsProcess,buttonOut,buttonIn,10,706,128,128);
-        this->exit = ProcessButton(NULL,buttonOut,buttonIn,436,706,128,128);
 
-        this->font = font;
-
-        SDL_Color hatchBlue = {1,91,144,100};
-
-        geraldHatch = render_text("Dr. Gerald G. Hatch Scholarship",font,hatchBlue);
-
-        aboutMeTexture = render_text("About Me",font,hatchBlue);
-        interestsTexture = render_text("Interests",font,hatchBlue);
-        academicsTexture = render_text("Academics",font,hatchBlue);
-        exitTexture = render_text("Exit",font,hatchBlue);
-
-    }
-
-    void init()
-    {
-    }
+    void init();
 
     void handle_events(SDL_Event *event)
     {
@@ -300,7 +281,7 @@ public:
 
     void draw()
     {
-        Process::draw();
+
     };
 
     Interests()
@@ -311,6 +292,126 @@ public:
 
 };
 
+class AboutMe : public Process
+{
+public:
+
+    vec2d kaiPosition;
+    vec2d kaiDimensions;
+    SDL_Texture *kaiTexture;
+
+    ProcessButton goBack;
+    Process *goBackProcess;
+
+    SDL_Texture *goBackTexture;
+
+    SDL_Texture *aboutMeTexture;
+
+    TTF_Font *font;
+
+    void init()
+    {
+        SDL_SetRenderDrawColor(renderer,255,255,255,255);
+        this->goBackProcess = new IntroAnimation
+        (
+         vec2d(44.0f,-1000.0f),
+         vec2d(1024,128),
+         10,
+         hatchTexture,
+         buttonOut,
+         buttonIn,
+         berbas
+        );
+
+        this->goBack = ProcessButton(goBackProcess,buttonOut,buttonIn,SCREEN_WIDTH-400,SCREEN_HEIGHT-150,128,128);
+
+    };
+
+    void draw()
+    {
+        goBack.draw();
+        render_texture(goBackTexture,goBack.x+goBack.width + 5,goBack.y,200,goBack.height);
+        render_texture(kaiTexture,kaiPosition.x,kaiPosition.y,kaiDimensions.x,kaiDimensions.y);
+        render_texture(aboutMeTexture,0,0,500,100);
+
+    };
+
+    void handle_events(SDL_Event *event)
+    {
+        finished = goBack.handle_events(event,&next);
+    }
+
+    AboutMe
+    (
+        SDL_Texture *kaiTexture,
+        vec2d kaiPosition,
+        vec2d kaiDimensions,
+        SDL_Texture *buttonOut,
+        SDL_Texture *buttonIn,
+        TTF_Font *font
+    )
+    {
+        this->kaiTexture = kaiTexture;
+        this->kaiPosition = kaiPosition;
+        this->kaiDimensions = kaiDimensions;
+
+        SDL_Color hatchBlue = {1,91,144,100};
+        goBackTexture = render_text("Back",font,hatchBlue);
+
+        aboutMeTexture = render_text("Name: Kai Rüsch/nAge: 17/nSchool: Aurora High School",font,hatchBlue);
+
+        finished = false;
+    };
+
+};
+
+//------------------ Constructors  -------------------------
+
+IntroAnimation::IntroAnimation
+(
+        vec2d hatchPosition,
+        vec2d hatchSize,
+        float hatchEndHeight,
+        SDL_Texture *hatchTexture,
+
+        SDL_Texture *buttonOut,
+        SDL_Texture *buttonIn,
+
+        TTF_Font *font
+)
+    {
+        this->next = NULL;
+        finished = false;
+        this->hatchPosition = hatchPosition;
+        this->hatchSize = hatchSize;
+        this->hatchEndHeight = hatchEndHeight;
+        this->hatchTexture = hatchTexture;
+
+        this->font = font;
+
+        SDL_Color hatchBlue = {1,91,144,100};
+
+        geraldHatch = render_text("Dr. Gerald G. Hatch Scholarship",font,hatchBlue);
+
+        aboutMeTexture = render_text("About Me",font,hatchBlue);
+        interestsTexture = render_text("Interests",font,hatchBlue);
+        academicsTexture = render_text("Academics",font,hatchBlue);
+        exitTexture = render_text("Exit",font,hatchBlue);
+
+    }
+
+void IntroAnimation::init()
+{
+    SDL_SetRenderDrawColor(renderer,255,255,255,255);
+    this->interestsProcess = new Interests();
+    this->academicsProcess = NULL;
+    this->aboutMeProcess = new AboutMe(kaiTexture,vec2d(100,100),vec2d(100,100),buttonOut,buttonIn,berbas);
+
+    this->aboutMe = ProcessButton(aboutMeProcess,buttonOut,buttonIn,10,370,128,128);
+    this->interests = ProcessButton(interestsProcess,buttonOut,buttonIn,436,370,128,128);
+    this->academics = ProcessButton(academicsProcess,buttonOut,buttonIn,10,706,128,128);
+    this->exit = ProcessButton(NULL,buttonOut,buttonIn,436,706,128,128);
+}
 
 int main(int argc, char *argv[])
 {
@@ -321,25 +422,21 @@ int main(int argc, char *argv[])
 
     SDL_SetRenderDrawColor(renderer,255,255,255,255);
 
-    SDL_Texture *hatchTexture = load_texture("assets/hatch_logo.png");
-    SDL_Texture *buttonOut = load_texture("assets/button_out.png");
-    SDL_Texture *buttonIn = load_texture("assets/button_in.png");
+    hatchTexture = load_texture("assets/hatch_logo.png");
+    buttonOut = load_texture("assets/button_out.png");
+    buttonIn = load_texture("assets/button_in.png");
+    kaiTexture = load_texture("assets/terriblePhoto.jpg");
 
-    TTF_Font *berbas = TTF_OpenFont("assets/berbas.ttf",96);
+    berbas = TTF_OpenFont("assets/berbas.ttf",96);
 
 
     float dt = 0;
     float prevTime = 0.0f;
 
-    Process *interests = new Interests;
 
     Process *process = NULL;
     process = new IntroAnimation
     (
-         NULL,
-         NULL,
-         interests,
-         NULL,
          vec2d(44.0f,-1000.0f),
          vec2d(1024,128),
          10,
