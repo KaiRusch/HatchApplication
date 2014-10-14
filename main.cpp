@@ -305,7 +305,9 @@ public:
 
     SDL_Texture *goBackTexture;
 
-    SDL_Texture *aboutMeTexture;
+    SDL_Texture *nameTexture;
+    SDL_Texture *ageTexture;
+    SDL_Texture *schoolTexture;
 
     TTF_Font *font;
 
@@ -332,7 +334,9 @@ public:
         goBack.draw();
         render_texture(goBackTexture,goBack.x+goBack.width + 5,goBack.y,200,goBack.height);
         render_texture(kaiTexture,kaiPosition.x,kaiPosition.y,kaiDimensions.x,kaiDimensions.y);
-        render_texture(aboutMeTexture,0,0,500,100);
+        render_texture(nameTexture,0,340,500,100);
+        render_texture(ageTexture,0,450,200,100);
+        render_texture(schoolTexture,0,560,600,100);
 
     };
 
@@ -358,7 +362,9 @@ public:
         SDL_Color hatchBlue = {1,91,144,100};
         goBackTexture = render_text("Back",font,hatchBlue);
 
-        aboutMeTexture = render_text("Name: Kai Rüsch/nAge: 17/nSchool: Aurora High School",font,hatchBlue);
+        nameTexture = render_text("Name:  Kai  Rusch",font,hatchBlue);
+        ageTexture = render_text("Age:  17",font,hatchBlue);
+        schoolTexture = render_text("School:  Aurora  High  School",font,hatchBlue);
 
         finished = false;
     };
@@ -405,7 +411,7 @@ void IntroAnimation::init()
     SDL_SetRenderDrawColor(renderer,255,255,255,255);
     this->interestsProcess = new Interests();
     this->academicsProcess = NULL;
-    this->aboutMeProcess = new AboutMe(kaiTexture,vec2d(100,100),vec2d(100,100),buttonOut,buttonIn,berbas);
+    this->aboutMeProcess = new AboutMe(kaiTexture,vec2d(10,10),vec2d(240,320),buttonOut,buttonIn,berbas);
 
     this->aboutMe = ProcessButton(aboutMeProcess,buttonOut,buttonIn,10,370,128,128);
     this->interests = ProcessButton(interestsProcess,buttonOut,buttonIn,436,370,128,128);
