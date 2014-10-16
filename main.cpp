@@ -21,6 +21,16 @@ SDL_Texture *hatchTexture = NULL;
 SDL_Texture *buttonOut = NULL;
 SDL_Texture *buttonIn = NULL;
 SDL_Texture *kaiTexture = NULL;
+SDL_Texture *alexTexture = NULL;
+SDL_Texture *napoleonTexture = NULL;
+SDL_Texture *codeTexture = NULL;
+SDL_Texture *aluTexture = NULL;
+SDL_Texture *cpuTexture = NULL;
+SDL_Texture *higgsTexture = NULL;
+SDL_Texture *nuclearTexture = NULL;
+SDL_Texture *waterlooTexture = NULL;
+SDL_Texture *queenTexture = NULL;
+SDL_Texture *awardsTexture = NULL;
 
 TTF_Font *berbas = NULL;
 
@@ -56,6 +66,11 @@ SDL_Texture *load_texture(const char* fileName)
 
 void render_texture(SDL_Texture *texture, float x, float y, float w, float h)
 {
+    if(texture == NULL)
+    {
+        printf("Texture is NULL\n");
+        return;
+    }
     SDL_Rect destination;
     destination.x = x;
     destination.y = y;
@@ -183,8 +198,6 @@ public:
     vec2d hatchSize;
     float hatchEndHeight;
 
-    SDL_Texture *hatchTexture;
-
     SDL_Texture *geraldHatch;
 
     ProcessButton aboutMe;
@@ -274,20 +287,102 @@ public:
 
     float scroll;
 
+    float velocity;
+
+    ProcessButton goBack;
+
+    Process *goBackProcess;
+    SDL_Texture *goBackTexture;
+
+    SDL_Texture *pText;
+    SDL_Texture *cText;
+    SDL_Texture *hText;
+    SDL_Texture *sText;
+
+    float length;
+
     void init()
     {
-        SDL_SetRenderDrawColor(renderer,21,164,174,255);
+        SDL_SetRenderDrawColor(renderer,255,255,255,255);
+        this->goBackProcess = new IntroAnimation
+        (
+         vec2d(44.0f,-200.0f),
+         vec2d(1024,128),
+         10,
+         hatchTexture,
+         buttonOut,
+         buttonIn,
+         berbas
+        );
+
+        this->goBack = ProcessButton(goBackProcess,buttonOut,buttonIn,SCREEN_WIDTH-400,SCREEN_HEIGHT-150,128,128);
+    };
+
+    void handle_events(SDL_Event *event)
+    {
+        if(!finished)
+            finished = goBack.handle_events(event,&next);
+    };
+
+    void update(float dt)
+    {
+        scroll += velocity*dt;
+        if(scroll >= length)
+        {
+            next = goBackProcess;
+            finished = true;
+        }
+
     };
 
     void draw()
     {
+        render_texture(alexTexture,1550.0f-scroll,300,300,300);
+        render_texture(napoleonTexture,1900.0-scroll,50,400,473);
+        render_texture(pText,200-scroll,10,700,100);
+        render_texture(codeTexture,200-scroll,160,494,640);
+        render_texture(cText,800-scroll,500,500,100);
+        render_texture(aluTexture,900-scroll,10,500,400);
+        render_texture(cpuTexture,900-scroll,700,300,300);
+        render_texture(hText,1500-scroll,100,300,100);
+        render_texture(sText,2200-scroll,700,300,100);
+        render_texture(higgsTexture,2600-scroll,500,500,500);
+        render_texture(nuclearTexture,2500-scroll,10,470,400);
+        goBack.draw();
+        render_texture(goBackTexture,goBack.x+goBack.width + 5,goBack.y,200,goBack.height);
+
 
     };
+
+    ~Interests()
+    {
+    SDL_DestroyTexture(goBackTexture);
+
+    SDL_DestroyTexture(pText);
+    SDL_DestroyTexture(cText);
+    SDL_DestroyTexture(hText);
+    SDL_DestroyTexture(sText);
+    }
 
     Interests()
     {
         scroll = 0.0f;
         finished = false;
+        this->goBack = ProcessButton(goBackProcess,buttonOut,buttonIn,SCREEN_WIDTH-400,SCREEN_HEIGHT-150,128,128);
+
+        SDL_Color hatchBlue = {1,91,144,100};
+        goBackTexture = render_text("Back",berbas,hatchBlue);
+
+        pText = render_text("Programming... Obviously",berbas,hatchBlue);
+        cText = render_text("Anything Computers",berbas,hatchBlue);
+        hText = render_text("History",berbas,hatchBlue);
+        sText = render_text("Science",berbas,hatchBlue);
+
+
+        velocity = 70.0f;
+
+        length = 2000.0f;
+
     };
 
 };
@@ -298,7 +393,6 @@ public:
 
     vec2d kaiPosition;
     vec2d kaiDimensions;
-    SDL_Texture *kaiTexture;
 
     ProcessButton goBack;
     Process *goBackProcess;
@@ -308,6 +402,7 @@ public:
     SDL_Texture *nameTexture;
     SDL_Texture *ageTexture;
     SDL_Texture *schoolTexture;
+    SDL_Texture *languagesTexture;
 
     TTF_Font *font;
 
@@ -316,7 +411,7 @@ public:
         SDL_SetRenderDrawColor(renderer,255,255,255,255);
         this->goBackProcess = new IntroAnimation
         (
-         vec2d(44.0f,-1000.0f),
+         vec2d(44.0f,-200.0f),
          vec2d(1024,128),
          10,
          hatchTexture,
@@ -334,15 +429,26 @@ public:
         goBack.draw();
         render_texture(goBackTexture,goBack.x+goBack.width + 5,goBack.y,200,goBack.height);
         render_texture(kaiTexture,kaiPosition.x,kaiPosition.y,kaiDimensions.x,kaiDimensions.y);
-        render_texture(nameTexture,0,340,500,100);
-        render_texture(ageTexture,0,450,200,100);
-        render_texture(schoolTexture,0,560,600,100);
+        render_texture(nameTexture,10,340,500,100);
+        render_texture(ageTexture,10,450,200,100);
+        render_texture(schoolTexture,10,560,600,100);
+        render_texture(languagesTexture,10,670,700,100);
 
     };
 
     void handle_events(SDL_Event *event)
     {
         finished = goBack.handle_events(event,&next);
+    }
+
+    ~AboutMe()
+    {
+    SDL_DestroyTexture(goBackTexture);
+
+    SDL_DestroyTexture(nameTexture);
+    SDL_DestroyTexture(ageTexture);
+    SDL_DestroyTexture(schoolTexture);
+    SDL_DestroyTexture(languagesTexture);
     }
 
     AboutMe
@@ -355,7 +461,6 @@ public:
         TTF_Font *font
     )
     {
-        this->kaiTexture = kaiTexture;
         this->kaiPosition = kaiPosition;
         this->kaiDimensions = kaiDimensions;
 
@@ -365,10 +470,103 @@ public:
         nameTexture = render_text("Name:  Kai  Rusch",font,hatchBlue);
         ageTexture = render_text("Age:  17",font,hatchBlue);
         schoolTexture = render_text("School:  Aurora  High  School",font,hatchBlue);
+        languagesTexture = render_text("Speaks:  German,  English,  French",font,hatchBlue);
 
         finished = false;
     };
 
+};
+
+class Academics : public Process
+{
+public:
+ float scroll;
+
+    ProcessButton goBack;
+
+    Process *goBackProcess;
+    SDL_Texture *goBackTexture;
+
+    SDL_Texture *sText;
+    SDL_Texture *eText;
+
+    SDL_Texture *aText;
+
+    float height;
+
+    float velocity;
+
+    void init()
+    {
+        SDL_SetRenderDrawColor(renderer,255,255,255,255);
+        this->goBackProcess = new IntroAnimation
+        (
+         vec2d(44.0f,-200.0f),
+         vec2d(1024,128),
+         10,
+         hatchTexture,
+         buttonOut,
+         buttonIn,
+         berbas
+        );
+
+        this->goBack = ProcessButton(goBackProcess,buttonOut,buttonIn,SCREEN_WIDTH-400,SCREEN_HEIGHT-150,128,128);
+    };
+
+    void handle_events(SDL_Event *event)
+    {
+        if(!finished)
+            finished = goBack.handle_events(event,&next);
+    };
+
+    void update(float dt)
+    {
+      scroll += velocity *dt;
+      if(scroll >= height)
+      {
+            next = goBackProcess;
+            finished = true;
+      }
+    };
+
+    void draw()
+    {
+
+        render_texture(waterlooTexture,200,800-scroll,450,250);
+        render_texture(queenTexture,670,800-scroll,450,250);
+        render_texture(sText,390,600-scroll,400,100);
+        render_texture(eText,270,1100-scroll,700,100);
+        render_texture(aText,320,1400-scroll,600,100);
+        render_texture(awardsTexture,110,1700-scroll,1150,2050);
+
+        goBack.draw();
+        render_texture(goBackTexture,goBack.x+goBack.width + 5,goBack.y,200,goBack.height);
+    };
+
+    ~Academics()
+    {
+        SDL_DestroyTexture(sText);
+        SDL_DestroyTexture(eText);
+        SDL_DestroyTexture(aText);
+    }
+
+    Academics()
+    {
+        scroll = 0.0f;
+        finished = false;
+        this->goBack = ProcessButton(goBackProcess,buttonOut,buttonIn,SCREEN_WIDTH-400,SCREEN_HEIGHT-150,128,128);
+
+        SDL_Color hatchBlue = {1,91,144,100};
+        goBackTexture = render_text("Back",berbas,hatchBlue);
+
+        sText = render_text("Plan  to  study  at:",berbas,hatchBlue);
+        eText = render_text("Program:  Software  Engineering",berbas,hatchBlue);
+        aText = render_text("Academic  Awards:",berbas,hatchBlue);
+
+        velocity = 150.0f;
+        height = 3000.0f;
+
+    };
 };
 
 //------------------ Constructors  -------------------------
@@ -391,7 +589,6 @@ IntroAnimation::IntroAnimation
         this->hatchPosition = hatchPosition;
         this->hatchSize = hatchSize;
         this->hatchEndHeight = hatchEndHeight;
-        this->hatchTexture = hatchTexture;
 
         this->font = font;
 
@@ -410,7 +607,7 @@ void IntroAnimation::init()
 {
     SDL_SetRenderDrawColor(renderer,255,255,255,255);
     this->interestsProcess = new Interests();
-    this->academicsProcess = NULL;
+    this->academicsProcess = new Academics();
     this->aboutMeProcess = new AboutMe(kaiTexture,vec2d(10,10),vec2d(240,320),buttonOut,buttonIn,berbas);
 
     this->aboutMe = ProcessButton(aboutMeProcess,buttonOut,buttonIn,10,370,128,128);
@@ -432,6 +629,16 @@ int main(int argc, char *argv[])
     buttonOut = load_texture("assets/button_out.png");
     buttonIn = load_texture("assets/button_in.png");
     kaiTexture = load_texture("assets/terriblePhoto.jpg");
+    alexTexture = load_texture("assets/Alexander_The_Great.jpg");
+    napoleonTexture = load_texture("assets/Napoleon_Alps.jpg");
+    codeTexture = load_texture("assets/code.png");
+    aluTexture = load_texture("assets/ALU.png");
+    cpuTexture = load_texture("assets/cpu.jpg");
+    higgsTexture = load_texture("assets/higgs.jpg");
+    nuclearTexture = load_texture("assets/reactor.jpg");
+    waterlooTexture = load_texture("assets/waterloo.png");
+    queenTexture = load_texture("assets/queen.png");
+    awardsTexture = load_texture("assets/awards.png");
 
     berbas = TTF_OpenFont("assets/berbas.ttf",96);
 
@@ -454,7 +661,7 @@ int main(int argc, char *argv[])
 
     process->init();
 
-
+    int frames = 0;
 
     SDL_Event windowEvent;
     while(true)
@@ -485,7 +692,6 @@ int main(int argc, char *argv[])
         process->update(dt);
 
 
-
         if(process->finished)
         {
             Process *completed = process;
@@ -498,16 +704,39 @@ int main(int argc, char *argv[])
 
         }
 
-        SDL_RenderClear(renderer);
+        frames++;
 
-        process->draw();
+        if(frames >= 50)
+        {
+            SDL_RenderClear(renderer);
 
-        SDL_RenderPresent(renderer);
+            process->draw();
+
+            SDL_RenderPresent(renderer);
+
+            frames = 0;
+        }
 
     }
+
+    TTF_CloseFont(berbas);
+
     SDL_DestroyTexture(buttonIn);
     SDL_DestroyTexture(buttonOut);
     SDL_DestroyTexture(hatchTexture);
+    SDL_DestroyTexture(kaiTexture);
+    SDL_DestroyTexture(buttonIn);
+    SDL_DestroyTexture(buttonOut);
+    SDL_DestroyTexture(alexTexture);
+    SDL_DestroyTexture(napoleonTexture);
+    SDL_DestroyTexture(codeTexture);
+    SDL_DestroyTexture(aluTexture);
+    SDL_DestroyTexture(cpuTexture);
+    SDL_DestroyTexture(higgsTexture);
+    SDL_DestroyTexture(nuclearTexture);
+    SDL_DestroyTexture(waterlooTexture);
+    SDL_DestroyTexture(queenTexture);
+    SDL_DestroyTexture(awardsTexture);
     SDL_DestroyRenderer(renderer);
     SDL_DestroyWindow(window);
 
