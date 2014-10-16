@@ -31,6 +31,11 @@ SDL_Texture *nuclearTexture = NULL;
 SDL_Texture *waterlooTexture = NULL;
 SDL_Texture *queenTexture = NULL;
 SDL_Texture *awardsTexture = NULL;
+SDL_Texture *sdlTexture;
+SDL_Texture *gccTexture;
+SDL_Texture *cbTexture;
+SDL_Texture *mingwTexture;
+SDL_Texture *cppTexture;
 
 TTF_Font *berbas = NULL;
 
@@ -203,16 +208,22 @@ public:
     ProcessButton aboutMe;
     ProcessButton interests;
     ProcessButton academics;
+    ProcessButton about;
+    ProcessButton mandelbrot;
     ProcessButton exit;
 
     SDL_Texture *aboutMeTexture;
     SDL_Texture *interestsTexture;
     SDL_Texture *academicsTexture;
+    SDL_Texture *aboutTexture;
+    SDL_Texture *mandelbrotTexture;
     SDL_Texture *exitTexture;
 
     Process *aboutMeProcess;
     Process *interestsProcess;
     Process *academicsProcess;
+    Process *mandelbrotProcess;
+    Process *aboutProcess;
 
     TTF_Font *font;
 
@@ -237,7 +248,9 @@ public:
         finished = aboutMe.handle_events(event,&next)
         || interests.handle_events(event,&next)
         || academics.handle_events(event,&next)
-        || exit.handle_events(event,&next);
+        || exit.handle_events(event,&next)
+        || about.handle_events(event,&next)
+        || mandelbrot.handle_events(event,&next);
     }
 
     void update(float dt)
@@ -274,6 +287,12 @@ public:
 
         academics.draw();
         render_texture(academicsTexture,academics.x+academics.width+5,academics.y,280,academics.height);
+
+        about.draw();
+        render_texture(aboutTexture,about.x+about.width+5,about.y,200,about.height);
+
+        mandelbrot.draw();
+        render_texture(mandelbrotTexture,mandelbrot.x+mandelbrot.width+5,mandelbrot.y,280,mandelbrot.height);
 
         exit.draw();
         render_texture(exitTexture,exit.x+exit.width+5,exit.y,150,exit.height);
@@ -569,6 +588,188 @@ public:
     };
 };
 
+class About : public Process
+{
+public:
+    ProcessButton goBack;
+
+    Process *goBackProcess;
+    SDL_Texture *goBackTexture;
+
+    SDL_Texture *aTexture;
+
+    void init()
+    {
+        SDL_SetRenderDrawColor(renderer,255,255,255,255);
+        this->goBackProcess = new IntroAnimation
+        (
+         vec2d(44.0f,-200.0f),
+         vec2d(1024,128),
+         10,
+         hatchTexture,
+         buttonOut,
+         buttonIn,
+         berbas
+        );
+
+        this->goBack = ProcessButton(goBackProcess,buttonOut,buttonIn,SCREEN_WIDTH-400,SCREEN_HEIGHT-150,128,128);
+    };
+
+    void handle_events(SDL_Event *event)
+    {
+        if(!finished)
+            finished = goBack.handle_events(event,&next);
+    };
+
+    void draw()
+    {
+
+        render_texture(sdlTexture,300,300,179,99);
+        render_texture(gccTexture,500,280,109,130);
+        render_texture(mingwTexture,620,320,229,60);
+        render_texture(cbTexture,890,300,128,128);
+        render_texture(cppTexture,100,300,180,97);
+        render_texture(aTexture,130,80,900,150);
+
+        goBack.draw();
+        render_texture(goBackTexture,goBack.x+goBack.width + 5,goBack.y,200,goBack.height);
+    };
+
+    ~About()
+    {
+        SDL_DestroyTexture(aTexture);
+    }
+
+    About()
+    {
+        finished = false;
+        this->goBack = ProcessButton(goBackProcess,buttonOut,buttonIn,SCREEN_WIDTH-400,SCREEN_HEIGHT-150,128,128);
+
+        SDL_Color hatchBlue = {1,91,144,100};
+        goBackTexture = render_text("Back",berbas,hatchBlue);
+        aTexture = render_text("This  program  was  made  with:",berbas,hatchBlue);
+
+    };
+
+};
+
+class Mandelbrot : public Process
+{
+public:
+
+    ProcessButton goBack;
+
+    Process *goBackProcess;
+    SDL_Texture *goBackTexture;
+
+    SDL_Texture *mandelTexture;
+
+    SDL_Surface *surface;
+
+    int frames;
+    int maxIt;
+
+    void put_pixel(SDL_Surface *surface, int x, int y, Uint32 pixel)
+    {
+        int bpp = surface->format->BytesPerPixel;
+        Uint8 *p = (Uint8 *)surface->pixels + y * surface->pitch + x * bpp;
+        *(Uint32 *)p = pixel;
+    }
+
+    void init()
+    {
+        SDL_SetRenderDrawColor(renderer,0,0,0,255);
+        this->goBackProcess = new IntroAnimation
+        (
+         vec2d(44.0f,-200.0f),
+         vec2d(1024,128),
+         10,
+         hatchTexture,
+         buttonOut,
+         buttonIn,
+         berbas
+        );
+
+        this->goBack = ProcessButton(goBackProcess,buttonOut,buttonIn,SCREEN_WIDTH-400,SCREEN_HEIGHT-150,128,128);
+    };
+
+    void handle_events(SDL_Event *event)
+    {
+        if(!finished)
+            finished = goBack.handle_events(event,&next);
+    };
+
+    void update(float dt)
+    {
+        if(frames >= 10000 && maxIt <= 20)
+        {
+            maxIt++;
+
+            for(int i = 0; i < 1024; ++i)
+            {
+                for(int j = 0; j < 1024; ++j)
+                {
+                    float x0 = ((float)i-512)/((float)1024/4.0f);
+                    float y0 = ((float)j-512)/((float)1024/4.0f);
+
+                    float x = 0;
+                    float y = 0;
+
+                    int it = -1;
+                    while(it <= maxIt && x*x + y*y <= 4.0f)
+                    {
+                        it++;
+                        float xTemp = x*x - y*y + x0;
+                        y = 2*x*y + y0;
+                        x = xTemp;
+                    }
+
+                    put_pixel(surface,i,j,SDL_MapRGB(surface->format,it*200,it*100,it*50));
+
+                }
+            }
+
+            SDL_DestroyTexture(mandelTexture);
+            mandelTexture = SDL_CreateTextureFromSurface(renderer,surface);
+
+            frames = 0;
+        }
+    };
+
+    void draw()
+    {
+        frames++;
+        render_texture(mandelTexture,128,0,1024,1024);
+        goBack.draw();
+        render_texture(goBackTexture,goBack.x+goBack.width + 5,goBack.y,200,goBack.height);
+    };
+
+    ~Mandelbrot()
+    {
+        SDL_DestroyTexture(mandelTexture);
+        SDL_FreeSurface(surface);
+
+    }
+
+    Mandelbrot()
+    {
+        finished = false;
+        this->goBack = ProcessButton(goBackProcess,buttonOut,buttonIn,SCREEN_WIDTH-400,SCREEN_HEIGHT-150,128,128);
+
+        SDL_Color hatchBlue = {1,91,144,100};
+        goBackTexture = render_text("Back",berbas,hatchBlue);
+
+        surface = SDL_CreateRGBSurface(0,1024,1024,32,0,0,0,0);
+
+        mandelTexture = SDL_CreateTextureFromSurface(renderer,surface);
+
+        frames = 0;
+        maxIt = -1;
+
+    };
+
+};
+
 //------------------ Constructors  -------------------------
 
 IntroAnimation::IntroAnimation
@@ -596,10 +797,12 @@ IntroAnimation::IntroAnimation
 
         geraldHatch = render_text("Dr. Gerald G. Hatch Scholarship",font,hatchBlue);
 
-        aboutMeTexture = render_text("About Me",font,hatchBlue);
-        interestsTexture = render_text("Interests",font,hatchBlue);
-        academicsTexture = render_text("Academics",font,hatchBlue);
-        exitTexture = render_text("Exit",font,hatchBlue);
+        aboutMeTexture = render_text("About Me",berbas,hatchBlue);
+        interestsTexture = render_text("Interests",berbas,hatchBlue);
+        academicsTexture = render_text("Academics",berbas,hatchBlue);
+        exitTexture = render_text("Exit",berbas,hatchBlue);
+        aboutTexture = render_text("About",berbas,hatchBlue);
+        mandelbrotTexture = render_text("Mandelbrot",berbas,hatchBlue);
 
     }
 
@@ -609,11 +812,15 @@ void IntroAnimation::init()
     this->interestsProcess = new Interests();
     this->academicsProcess = new Academics();
     this->aboutMeProcess = new AboutMe(kaiTexture,vec2d(10,10),vec2d(240,320),buttonOut,buttonIn,berbas);
+    this->aboutProcess = new About();
+    this->mandelbrotProcess = new Mandelbrot;
 
     this->aboutMe = ProcessButton(aboutMeProcess,buttonOut,buttonIn,10,370,128,128);
     this->interests = ProcessButton(interestsProcess,buttonOut,buttonIn,436,370,128,128);
     this->academics = ProcessButton(academicsProcess,buttonOut,buttonIn,10,706,128,128);
-    this->exit = ProcessButton(NULL,buttonOut,buttonIn,436,706,128,128);
+    this->exit = ProcessButton(NULL,buttonOut,buttonIn,862,706,128,128);
+    this->about = ProcessButton(aboutProcess,buttonOut,buttonIn,862,370,128,128);
+    this->mandelbrot = ProcessButton(mandelbrotProcess,buttonOut,buttonIn,436,706,128,128);
 }
 
 int main(int argc, char *argv[])
@@ -639,6 +846,11 @@ int main(int argc, char *argv[])
     waterlooTexture = load_texture("assets/waterloo.png");
     queenTexture = load_texture("assets/queen.png");
     awardsTexture = load_texture("assets/awards.png");
+    sdlTexture = load_texture("assets/sdl.png");
+    gccTexture = load_texture("assets/gcc.gif");
+    cbTexture = load_texture("assets/codeblocks.png");
+    mingwTexture = load_texture("assets/mingw.png");
+    cppTexture = load_texture("assets/cpp.jpg");
 
     berbas = TTF_OpenFont("assets/berbas.ttf",96);
 
@@ -706,7 +918,7 @@ int main(int argc, char *argv[])
 
         frames++;
 
-        if(frames >= 50)
+        if(frames >= 70)
         {
             SDL_RenderClear(renderer);
 
@@ -737,6 +949,11 @@ int main(int argc, char *argv[])
     SDL_DestroyTexture(waterlooTexture);
     SDL_DestroyTexture(queenTexture);
     SDL_DestroyTexture(awardsTexture);
+    SDL_DestroyTexture(sdlTexture);
+    SDL_DestroyTexture(gccTexture);
+    SDL_DestroyTexture(cbTexture);
+    SDL_DestroyTexture(mingwTexture);
+    SDL_DestroyTexture(cppTexture);
     SDL_DestroyRenderer(renderer);
     SDL_DestroyWindow(window);
 
