@@ -701,7 +701,7 @@ public:
 
     void update(float dt)
     {
-        if(frames >= 10000 && maxIt <= 20)
+        if(frames >= 3000 && maxIt <= 20)
         {
             maxIt++;
 
@@ -763,7 +763,7 @@ public:
 
         mandelTexture = SDL_CreateTextureFromSurface(renderer,surface);
 
-        frames = 0;
+        frames = 4000;
         maxIt = -1;
 
     };
